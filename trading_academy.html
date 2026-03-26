@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Academy — Price Action</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111318;
+    --surface2: #181c22;
+    --border: #1e2430;
+    --accent: #00d4aa;
+    --accent2: #ff6b35;
+    --accent3: #7c6af7;
+    --text: #e8eaf0;
+    --text2: #8a90a0;
+    --text3: #555c6e;
+    --green: #00c896;
+    --red: #ff4d6a;
+    --yellow: #ffc857;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow-y: auto;
+  }
+
+  .logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .logo h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .logo h1 span { color: var(--accent); }
+
+  /* PROGRESS OVERVIEW */
+  .sidebar-progress {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 2px;
+    height: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 2px;
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+
+  .progress-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* NAV */
+  .nav-section {
+    padding: 16px 0;
+    flex: 1;
+  }
+
+  .nav-section-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 0 24px 8px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 24px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 400;
+  }
+
+  .nav-item:hover { background: rgba(0,212,170,0.05); color: var(--text); }
+  .nav-item.active {
+    background: rgba(0,212,170,0.08);
+    border-left-color: var(--accent);
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .nav-item .nav-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+
+  .nav-status {
+    margin-left: auto;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+
+  .nav-status.done { background: rgba(0,200,150,0.15); color: var(--green); }
+  .nav-status.locked { background: rgba(255,255,255,0.04); color: var(--text3); }
+  .nav-status.quiz { background: rgba(255,107,53,0.12); color: var(--accent2); }
+
+  /* MAIN */
+  .main {
+    margin-left: 260px;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+  }
+
+  .topbar {
+    position: sticky; top: 0;
+    background: rgba(10,12,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 50;
+  }
+
+  .topbar-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .topbar-stats {
+    display: flex;
+    gap: 24px;
+  }
+
+  .stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .stat-pill .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+
+  /* PAGES */
+  .page { display: none; padding: 48px 40px; max-width: 900px; }
+  .page.active { display: block; }
+
+  /* HOME */
+  .hero {
+    margin-bottom: 48px;
+  }
+
+  .hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .hero h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.05;
+    margin-bottom: 16px;
+  }
+
+  .hero h2 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .hero p {
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.7;
+    max-width: 560px;
+  }
+
+  /* MODULE CARDS */
+  .modules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .module-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .module-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .module-card:hover {
+    border-color: rgba(0,212,170,0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .module-card:hover::before { opacity: 1; }
+
+  .module-card.completed { border-color: rgba(0,200,150,0.2); }
+  .module-card.completed::before { opacity: 1; background: linear-gradient(90deg, var(--green), transparent); }
+
+  .module-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+  }
+
+  .module-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+
+  .module-desc {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+
+  .module-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .module-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+  }
+
+  .badge-new { background: rgba(0,212,170,0.1); color: var(--accent); }
+  .badge-quiz { background: rgba(255,107,53,0.1); color: var(--accent2); }
+  .badge-done { background: rgba(0,200,150,0.1); color: var(--green); }
+  .badge-locked { background: rgba(255,255,255,0.04); color: var(--text3); }
+
+  .module-score {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  /* CONTENT PAGES */
+  .content-header {
+    margin-bottom: 40px;
+  }
+
+  .content-breadcrumb {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .content-breadcrumb span { color: var(--text3); }
+  .content-breadcrumb .crumb { color: var(--text2); cursor: pointer; }
+  .content-breadcrumb .crumb:hover { color: var(--accent); }
+
+  .content-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.1;
+  }
+
+  .content-header p {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+
+  /* LESSON BLOCKS */
+  .lesson-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .lesson-block-header {
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .lesson-block-header:hover { background: rgba(255,255,255,0.02); }
+
+  .lesson-num-circle {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(0,212,170,0.08);
+    border: 1px solid rgba(0,212,170,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .lesson-block-header h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .expand-icon {
+    color: var(--text3);
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+
+  .lesson-block.open .expand-icon { transform: rotate(180deg); }
+
+  .lesson-content {
+    display: none;
+    padding: 0 24px 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .lesson-block.open .lesson-content { display: block; }
+
+  .lesson-content p {
+    font-size: 13.5px;
+    color: var(--text2);
+    line-height: 1.75;
+    margin-top: 16px;
+  }
+
+  .lesson-content p + p { margin-top: 10px; }
+
+  /* KEY CONCEPT BOX */
+  .concept-box {
+    background: rgba(0,212,170,0.04);
+    border: 1px solid rgba(0,212,170,0.12);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.65;
+  }
+
+  .concept-box strong { color: var(--accent); font-weight: 500; }
+
+  .warning-box {
+    background: rgba(255,107,53,0.04);
+    border: 1px solid rgba(255,107,53,0.12);
+    border-left: 3px solid var(--accent2);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.65;
+  }
+
+  .warning-box strong { color: var(--accent2); font-weight: 500; }
+
+  /* TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 12.5px;
+  }
+
+  .data-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text3);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--text2);
+    vertical-align: top;
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .data-table td:first-child { color: var(--text); font-weight: 500; }
+
+  /* TAG BADGES */
+  .tag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px; padding: 2px 8px; border-radius: 3px; }
+  .tag-green { background: rgba(0,200,150,0.1); color: var(--green); }
+  .tag-red { background: rgba(255,77,106,0.1); color: var(--red); }
+  .tag-yellow { background: rgba(255,200,87,0.1); color: var(--yellow); }
+  .tag-blue { background: rgba(124,106,247,0.1); color: var(--accent3); }
+
+  /* QUIZ */
+  .quiz-container { padding: 0; }
+
+  .quiz-header {
+    margin-bottom: 32px;
+  }
+
+  .quiz-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .quiz-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .quiz-progress-track {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+    max-width: 200px;
+  }
+
+  .quiz-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    transition: width 0.3s;
+  }
+
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+    margin-bottom: 20px;
+  }
+
+  .question-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+  }
+
+  .question-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.4;
+    margin-bottom: 24px;
+  }
+
+  .answers { display: flex; flex-direction: column; gap: 10px; }
+
+  .answer-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text2);
+    font-size: 13.5px;
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .answer-btn:hover:not(:disabled) {
+    border-color: rgba(0,212,170,0.3);
+    background: rgba(0,212,170,0.04);
+    color: var(--text);
+  }
+
+  .answer-btn.correct {
+    border-color: var(--green);
+    background: rgba(0,200,150,0.08);
+    color: var(--text);
+  }
+
+  .answer-btn.wrong {
+    border-color: var(--red);
+    background: rgba(255,77,106,0.08);
+    color: var(--text2);
+  }
+
+  .answer-btn.selected {
+    border-color: rgba(0,212,170,0.4);
+    background: rgba(0,212,170,0.06);
+    color: var(--text);
+  }
+
+  .answer-letter {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+
+  .answer-btn:hover:not(:disabled) .answer-letter { background: rgba(0,212,170,0.1); color: var(--accent); }
+  .answer-btn.correct .answer-letter { background: rgba(0,200,150,0.2); color: var(--green); }
+  .answer-btn.wrong .answer-letter { background: rgba(255,77,106,0.2); color: var(--red); }
+
+  .explanation-box {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: rgba(0,212,170,0.04);
+    border: 1px solid rgba(0,212,170,0.12);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.65;
+    display: none;
+  }
+
+  .explanation-box.show { display: block; }
+  .explanation-box strong { color: var(--accent); }
+
+  .quiz-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .btn {
+    padding: 11px 22px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .btn-primary:hover { background: #00f0c0; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+
+  .btn-ghost:hover { border-color: var(--text3); color: var(--text); }
+
+  /* RESULTS */
+  .results-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .score-ring {
+    width: 120px; height: 120px;
+    margin: 0 auto 24px;
+    position: relative;
+  }
+
+  .score-ring svg { transform: rotate(-90deg); }
+
+  .score-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .score-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .score-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 2px;
+  }
+
+  .results-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .results-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  .results-breakdown {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .breakdown-item {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+  }
+
+  .breakdown-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .breakdown-key {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--text3);
+    text-transform: uppercase;
+  }
+
+  /* PROGRESS PAGE */
+  .progress-page h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 32px;
+  }
+
+  .progress-module {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .pm-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .pm-info { flex: 1; }
+
+  .pm-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .pm-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .pm-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.6s;
+  }
+
+  .pm-stat {
+    font-family: 'DM Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .modules-grid { grid-template-columns: 1fr; }
+    .page { padding: 24px 20px; }
+    .topbar { padding: 12px 20px; }
+    .hero h2 { font-size: 28px; }
+    .mobile-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px; height: 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .results-breakdown { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (min-width: 769px) {
+    .mobile-toggle { display: none; }
+  }
+
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-tag">Price Action</div>
+    <h1>Trading<br><span>Academy</span></h1>
+  </div>
+
+  <div class="sidebar-progress">
+    <div class="progress-label">Progression totale</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="globalProgressBar" style="width:0%"></div>
+    </div>
+    <div class="progress-text">
+      <span id="globalProgressPct">0%</span>
+      <span id="globalProgressModules">0 / 10 modules</span>
+    </div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Navigation</div>
+    <div class="nav-item active" onclick="showPage('home')" id="nav-home">
+      <span class="nav-icon">⌂</span> Accueil
+    </div>
+    <div class="nav-item" onclick="showPage('progress')" id="nav-progress">
+      <span class="nav-icon">◈</span> Ma progression
+    </div>
+
+    <div class="nav-section-title" style="margin-top:12px">Cours — Price Action</div>
+    <div class="nav-item" onclick="showPage('m1')" id="nav-m1">
+      <span class="nav-icon">①</span> Fondamentaux
+      <span class="nav-status locked" id="status-m1">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('m2')" id="nav-m2">
+      <span class="nav-icon">②</span> Bougies japonaises
+      <span class="nav-status locked" id="status-m2">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('m3')" id="nav-m3">
+      <span class="nav-icon">③</span> Structure de marché
+      <span class="nav-status locked" id="status-m3">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('m4')" id="nav-m4">
+      <span class="nav-icon">④</span> Liquidité avancée
+      <span class="nav-status locked" id="status-m4">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('m5')" id="nav-m5">
+      <span class="nav-icon">⑤</span> Fake Breakouts
+      <span class="nav-status locked" id="status-m5">—</span>
+    </div>
+
+    <div class="nav-section-title" style="margin-top:12px">Cours — Guide Trader</div>
+    <div class="nav-item" onclick="showPage('m6')" id="nav-m6">
+      <span class="nav-icon">⑥</span> Psychologie
+      <span class="nav-status locked" id="status-m6">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('m7')" id="nav-m7">
+      <span class="nav-icon">⑦</span> Biais cognitifs
+      <span class="nav-status locked" id="status-m7">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('m8')" id="nav-m8">
+      <span class="nav-icon">⑧</span> Risk Management
+      <span class="nav-status locked" id="status-m8">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('m9')" id="nav-m9">
+      <span class="nav-icon">⑨</span> Backtesting
+      <span class="nav-status locked" id="status-m9">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('m10')" id="nav-m10">
+      <span class="nav-icon">⑩</span> Journal de trading
+      <span class="nav-status locked" id="status-m10">—</span>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="mobile-toggle" onclick="toggleSidebar()">☰</div>
+      <div class="topbar-title" id="topbarTitle">Tableau de bord</div>
+    </div>
+    <div class="topbar-stats">
+      <div class="stat-pill">
+        <div class="dot" style="background:var(--accent)"></div>
+        <span id="topStatModules">0 modules complétés</span>
+      </div>
+      <div class="stat-pill">
+        <div class="dot" style="background:var(--accent2)"></div>
+        <span id="topStatScore">Score moyen —</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME PAGE -->
+  <div class="page active fade-in" id="page-home">
+    <div class="hero">
+      <div class="hero-eyebrow">Tes cours · Édition avancée</div>
+      <h2>Maîtrise le<br><em>Price Action</em></h2>
+      <p>Lis chaque module, puis valide ta compréhension avec les quiz intégrés. Ta progression est sauvegardée automatiquement dans ton navigateur.</p>
+    </div>
+
+    <div id="modules-grid" class="modules-grid"></div>
+
+    <div class="concept-box" style="margin-top:8px">
+      <strong>💡 Comment utiliser cette app :</strong> Lis chaque leçon en cliquant sur les sections dépliables, puis lance le quiz du module. Un score ≥ 70% valide le module. Tu peux rejouer les quiz autant de fois que nécessaire.
+    </div>
+  </div>
+
+  <!-- PROGRESS PAGE -->
+  <div class="page fade-in" id="page-progress">
+    <div class="progress-page">
+      <h2>Ma progression</h2>
+      <div id="progress-list"></div>
+    </div>
+  </div>
+
+  <!-- MODULE PAGES (dynamically filled) -->
+  <div class="page fade-in" id="page-m1"></div>
+  <div class="page fade-in" id="page-m2"></div>
+  <div class="page fade-in" id="page-m3"></div>
+  <div class="page fade-in" id="page-m4"></div>
+  <div class="page fade-in" id="page-m5"></div>
+  <div class="page fade-in" id="page-m6"></div>
+  <div class="page fade-in" id="page-m7"></div>
+  <div class="page fade-in" id="page-m8"></div>
+  <div class="page fade-in" id="page-m9"></div>
+  <div class="page fade-in" id="page-m10"></div>
+</main>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const MODULES = [
+  {
+    id: 'm1',
+    title: 'Fondamentaux du Price Action',
+    desc: 'Définition, edge statistique, ce que lit vraiment un trader PA.',
+    icon: '🎯',
+    color: '#00d4aa',
+    lessons: [
+      {
+        title: 'Qu\'est-ce que le Price Action ?',
+        content: `<p>Le Price Action est une méthode d'analyse qui consiste à prendre des décisions de trading basées sur les <strong style="color:var(--accent)">mouvements bruts du prix</strong>, sans indicateurs dérivés. Il ne s'agit pas de prédire le marché, mais d'identifier des zones où la probabilité d'un mouvement dans une direction est statistiquement plus élevée.</p>
+        <div class="concept-box"><strong>📌 Nuance fondamentale :</strong> Le Price Action ne « prédit » rien. Il identifie des probabilités. Un setup à haute probabilité peut quand même échouer — c'est pour ça que la gestion du risque prime toujours sur le signal.</div>`
+      },
+      {
+        title: 'L\'edge statistique — La base de tout',
+        content: `<p>Une stratégie de trading doit posséder un <strong style="color:var(--accent)">edge</strong>, c'est-à-dire un avantage statistique mesurable : sur un grand nombre de trades, les gains surpassent les pertes. Sans edge prouvé, trader revient à jouer à pile ou face avec des frais en plus.</p>
+        <p>L'edge ne se ressent pas — il se mesure. C'est pourquoi le backtesting est indispensable avant tout argent réel : il permet de prouver chiffres à l'appui que ton edge existe.</p>
+        <div class="warning-box"><strong>⚠️</strong> Les pertes font partie intégrante du trading — même avec un edge positif. L'objectif n'est pas d'éviter les pertes, c'est de les contrôler et de s'assurer que sur 100 trades, le solde net est positif.</div>`
+      },
+      {
+        title: 'Les 4 piliers du Price Action moderne',
+        content: `<table class="data-table">
+          <tr><th>Pilier</th><th>Description</th></tr>
+          <tr><td>Bougies japonaises</td><td>Psychologie acheteurs / vendeurs sur chaque période</td></tr>
+          <tr><td>Structure de marché</td><td>Tendance, niveaux clés, pivots HH/HL/LH/LL</td></tr>
+          <tr><td>Liquidité</td><td>Là où se trouvent les stops — ce que le prix va chercher</td></tr>
+          <tr><td>Contexte</td><td>Tendance ou range, compression ou expansion</td></tr>
+        </table>
+        <div class="concept-box"><strong>🏦 Qui déplace vraiment les prix ?</strong> Entre 60 et 80% du volume sur les marchés liquides est exécuté par des algorithmes. Les institutionnels cherchent la liquidité pour entrer massivement sans faire bouger le marché. Lire ces mouvements, c'est exactement ce que le Price Action cherche à faire.</div>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Le Price Action permet principalement de :",
+        answers: ["Prédire avec certitude la direction du marché", "Identifier des zones de haute probabilité statistique", "Supprimer le besoin de gestion du risque", "Garantir un winrate supérieur à 80%"],
+        correct: 1,
+        explanation: "Le Price Action identifie des probabilités, jamais des certitudes. Il localise des zones où un mouvement est statistiquement plus probable, ce qui crée un edge sur le long terme."
+      },
+      {
+        q: "Qu'est-ce qu'un 'edge' en trading ?",
+        answers: ["Un indicateur technique avancé", "Un avantage statistique mesurable sur une grande série de trades", "La capacité à ne jamais perdre un trade", "Un type de signal de bougie japonaise"],
+        correct: 1,
+        explanation: "L'edge est un avantage statistique prouvé par le backtesting. Sur 100+ trades, les gains surpassent les pertes. Sans edge mesuré, trader = jouer à pile ou face."
+      },
+      {
+        q: "Quel pourcentage du volume est exécuté par des algorithmes sur les marchés liquides ?",
+        answers: ["10 à 20%", "30 à 40%", "60 à 80%", "95 à 100%"],
+        correct: 2,
+        explanation: "Entre 60 et 80% du volume est algorithmique. Cela explique pourquoi certains mouvements brusques ne sont pas aléatoires — ce sont des algos qui chassent des stops ou des institutions qui s'approvisionnent."
+      },
+      {
+        q: "Pourquoi les pertes sont-elles inévitables même avec un bon edge ?",
+        answers: ["Parce que le trader manque de discipline", "Parce que l'edge statistique se manifeste sur une série, pas sur chaque trade individuel", "Parce que les indicateurs sont imprécis", "Parce que le marché est manipulé"],
+        correct: 1,
+        explanation: "L'edge est une probabilité sur le long terme. Sur 100 trades à 50% de winrate, tu perdras 50 fois — c'est normal et attendu. Ce qui compte : que la somme des gains > somme des pertes."
+      },
+      {
+        q: "Lequel de ces éléments N'EST PAS un pilier du Price Action moderne ?",
+        answers: ["Bougies japonaises", "Liquidité et stops", "Indicateur RSI", "Structure de marché"],
+        correct: 2,
+        explanation: "Le RSI est un indicateur dérivé — exactement ce que le Price Action n'utilise pas. Les 4 piliers sont : bougies japonaises, structure de marché, liquidité, et contexte."
+      }
+    ]
+  },
+
+  {
+    id: 'm2',
+    title: 'Bougies japonaises',
+    desc: 'Anatomie, patterns de continuation et de retournement.',
+    icon: '🕯️',
+    color: '#7c6af7',
+    lessons: [
+      {
+        title: 'Anatomie d\'une bougie',
+        content: `<table class="data-table">
+          <tr><th>Élément</th><th>Description</th></tr>
+          <tr><td>Corps</td><td>Zone entre ouverture et clôture — traduit l'intention directionnelle</td></tr>
+          <tr><td>Mèche haute</td><td>Plus haut atteint — rejet si mèche longue avec petit corps</td></tr>
+          <tr><td>Mèche basse</td><td>Plus bas atteint — rejet si mèche longue avec petit corps</td></tr>
+          <tr><td>Bougie verte</td><td>Clôture au-dessus de l'ouverture → session haussière</td></tr>
+          <tr><td>Bougie rouge</td><td>Clôture en dessous de l'ouverture → session baissière</td></tr>
+        </table>
+        <div class="warning-box"><strong>⚠️ Règle fondamentale :</strong> Un pattern de bougie seul ne vaut presque rien. Il ne prend de valeur que positionné sur un niveau clé, après une prise de liquidité, dans le contexte de la tendance.</div>`
+      },
+      {
+        title: 'Patterns de retournement',
+        content: `<p><strong style="color:var(--accent)">Pin Bar</strong> — Corps ≤ 30% de la hauteur totale. Mèche ≥ 2× le corps. La mèche pointe vers le niveau rejeté.</p>
+        <div class="warning-box"><strong>⚠️</strong> Un Pin Bar isolé a un taux d'échec supérieur à 60%. Pour être valide, il DOIT être positionné sur un niveau clé, dans le sens de la tendance, idéalement avec une mèche qui a chassé des stops.</div>
+        <p><strong style="color:var(--accent)">Engulfing (Avalement)</strong> — La bougie B englobe entièrement le corps de la bougie A précédente. Plus la bougie englobante est large, plus le signal est fort.</p>
+        <p><strong style="color:var(--accent)">Doji</strong> — Ouverture ≈ Clôture. Corps quasi inexistant. Traduit l'indécision. Puissant en haut/bas de tendance prolongée.</p>
+        <p><strong style="color:var(--accent)">Inside Bar</strong> — Bougie entièrement contenue dans la range de la bougie précédente. Traduit une compression. La cassure doit être franche, pas progressive.</p>
+        <p><strong style="color:var(--accent)">Marubozu</strong> — Corps large sans mèches. Domination totale d'un camp. Signal de continuation fort si dans le sens de la tendance.</p>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Pour qu'un Pin Bar soit valide, son corps doit être :",
+        answers: ["Supérieur à 50% de la hauteur totale", "Inférieur ou égal à 30% de la hauteur totale", "Égal à 50% exactement", "Supérieur à 70% de la hauteur totale"],
+        correct: 1,
+        explanation: "Un Pin Bar valide : corps ≤ 30% de la hauteur totale, mèche ≥ 2× le corps, et la mèche pointe vers le niveau rejeté. Ces proportions indiquent un rejet fort du prix."
+      },
+      {
+        q: "Le taux d'échec d'un Pin Bar sans contexte est :",
+        answers: ["Inférieur à 30%", "Autour de 50%", "Supérieur à 60%", "Nul si la mèche est longue"],
+        correct: 2,
+        explanation: "Les Pin Bars sans contexte (pas sur niveau clé, pas dans le sens de tendance) ont un taux d'échec > 60% selon le backtesting. Le contexte est aussi important que le pattern lui-même."
+      },
+      {
+        q: "Un Engulfing haussier (Bullish Engulfing) se compose de :",
+        answers: ["Deux bougies vertes consécutives", "Petite bougie rouge suivie d'une grande bougie verte qui englobe son corps", "Grande bougie verte suivie d'une petite bougie rouge", "Deux Doji consécutifs"],
+        correct: 1,
+        explanation: "Bullish Engulfing = petite bougie rouge (A) + grande bougie verte (B) dont le corps englobe entièrement le corps de A. Signal de retournement haussier."
+      },
+      {
+        q: "Qu'est-ce qu'un Doji signale principalement ?",
+        answers: ["Une forte tendance haussière", "Une impulsion directionnelle", "L'indécision du marché", "Un stop hunt imminent"],
+        correct: 2,
+        explanation: "Le Doji (ouverture ≈ clôture) traduit l'indécision : ni acheteurs ni vendeurs n'ont dominé la session. Il est particulièrement significatif au sommet ou au bas d'une tendance prolongée."
+      },
+      {
+        q: "Qu'est-ce qu'un Marubozu ?",
+        answers: ["Une bougie avec deux mèches égales", "Une bougie avec corps large et sans mèches (ou mèches négligeables)", "Un Doji avec longue mèche haute", "Une série d'Inside Bars"],
+        correct: 1,
+        explanation: "Le Marubozu = corps large sans mèches. Il traduit la domination totale d'un camp sur toute la session. C'est un signal de continuation fort lorsqu'il est dans le sens de la tendance."
+      }
+    ]
+  },
+
+  {
+    id: 'm3',
+    title: 'Structure de marché',
+    desc: 'Les trois états du marché, supports/résistances, BoS et ChoCh.',
+    icon: '📐',
+    color: '#ffc857',
+    lessons: [
+      {
+        title: 'Les trois états du marché',
+        content: `<table class="data-table">
+          <tr><th>État</th><th>Caractéristiques</th><th>Stratégie adaptée</th></tr>
+          <tr><td>Tendance haussière</td><td>HH + HL successifs</td><td>Acheter les pull-backs sur HL</td></tr>
+          <tr><td>Tendance baissière</td><td>LH + LL successifs</td><td>Vendre les pull-backs sur LH</td></tr>
+          <tr><td>Range (consolidation)</td><td>Oscillation entre support et résistance fixes</td><td>Acheter support, vendre résistance</td></tr>
+        </table>
+        <table class="data-table" style="margin-top:16px">
+          <tr><th>Sigle</th><th>Nom</th><th>Signification</th></tr>
+          <tr><td>HH</td><td>Higher High</td><td>Nouveau sommet plus haut → force haussière</td></tr>
+          <tr><td>HL</td><td>Higher Low</td><td>Nouveau plancher plus haut → acheteurs tiennent les supports</td></tr>
+          <tr><td>LH</td><td>Lower High</td><td>Nouveau sommet plus bas → vendeurs reprennent le contrôle</td></tr>
+          <tr><td>LL</td><td>Lower Low</td><td>Nouveau plancher plus bas → force baissière</td></tr>
+        </table>`
+      },
+      {
+        title: 'Supports, Résistances et Polarité',
+        content: `<p>Les niveaux de support et résistance sont des <strong style="color:var(--accent)">zones</strong> (pas des lignes) où le prix a réagi significativement par le passé. Plus un niveau a été testé, plus il est pertinent.</p>
+        <div class="concept-box"><strong>Principe de polarité :</strong> Une résistance cassée devient un support et vice versa. Travailler avec des zones (rectangles) et non des lignes précises — le marché n'est jamais exact. Plus le timeframe est élevé, plus le niveau est significatif.</div>`
+      },
+      {
+        title: 'Break of Structure (BoS) et Change of Character (ChoCh)',
+        content: `<p><strong style="color:var(--accent)">Break of Structure (BoS)</strong> — Cassure d'un pivot important. Attention : un BoS seul ne signifie pas automatiquement un retournement de tendance. Il peut aussi être une simple continuation ou un fake breakout conçu pour chasser les stops.</p>
+        <p><strong style="color:var(--accent)">Change of Character (ChoCh)</strong> — Après un BoS, le prix revient tester le niveau cassé (pull-back = retest). Si le niveau tient et que le prix repart dans la nouvelle direction, le ChoCh est confirmé. C'est le point d'entrée le plus propre après un retournement.</p>
+        <div class="concept-box"><strong>💡 Pour confirmer un vrai retournement :</strong> attendre le ChoCh. Un BoS seul peut être un piège.</div>`
+      }
+    ],
+    quiz: [
+      {
+        q: "En tendance haussière, la meilleure stratégie est :",
+        answers: ["Vendre les résistances", "Acheter les pull-backs sur les Higher Lows (HL)", "Trader tous les signaux indépendamment de la tendance", "Attendre un LL pour entrer en vente"],
+        correct: 1,
+        explanation: "En tendance haussière (HH + HL), on achète les pull-backs sur les Higher Lows. Chaque correction qui s'arrête plus haut que la précédente confirme la tendance et offre un point d'entrée optimal."
+      },
+      {
+        q: "Le principe de polarité stipule que :",
+        answers: ["Les supports et résistances sont permanents", "Une résistance cassée peut devenir un support et vice versa", "Les niveaux doivent être tracés comme des lignes précises", "Seuls les niveaux du timeframe 1H sont importants"],
+        correct: 1,
+        explanation: "La polarité est fondamentale : une résistance franchie se transforme en support (et vice versa). Le niveau a changé de nature — ce qui bloquait devient un tremplin."
+      },
+      {
+        q: "Un Break of Structure (BoS) seul signifie :",
+        answers: ["Toujours un retournement immédiat de tendance", "Pas forcément un retournement — peut être une continuation ou un fake breakout", "Que la tendance est confirmée à 100%", "Qu'il faut entrer immédiatement dans la direction du break"],
+        correct: 1,
+        explanation: "Un BoS seul ne suffit pas. Il peut être une continuation, ou un fake breakout conçu pour chasser les stops. Pour confirmer un vrai retournement, il faut attendre le ChoCh (Change of Character)."
+      },
+      {
+        q: "Le Change of Character (ChoCh) est confirmé lorsque :",
+        answers: ["Le prix casse n'importe quel niveau de support", "Après un BoS, le prix reteste le niveau cassé qui tient, et repart dans la nouvelle direction", "Le RSI dépasse 70", "Le volume augmente fortement"],
+        correct: 1,
+        explanation: "Le ChoCh = BoS + retest qui tient + reprise dans la nouvelle direction. C'est la séquence complète qui confirme le changement de tendance. C'est le point d'entrée le plus propre."
+      },
+      {
+        q: "Une série HH → HL → HH → HL indique :",
+        answers: ["Une tendance baissière", "Un range horizontal", "Une tendance haussière en cours", "Un retournement de tendance imminent"],
+        correct: 2,
+        explanation: "HH + HL successifs = structure haussière classique. Chaque vague monte plus haut (HH), et chaque correction reste plus haute que la précédente (HL). C'est la définition d'une tendance haussière en Price Action."
+      }
+    ]
+  },
+
+  {
+    id: 'm4',
+    title: 'Liquidité et Structure Avancée',
+    desc: 'Stop hunts, Equal Highs/Lows, Fair Value Gaps (FVG).',
+    icon: '🌊',
+    color: '#00d4aa',
+    lessons: [
+      {
+        title: 'Comprendre la liquidité',
+        content: `<p>La liquidité désigne les zones où s'accumulent les <strong style="color:var(--accent)">ordres stop du marché</strong> — les endroits où beaucoup de traders ont placé leurs stop-loss ou leurs ordres d'entrée en attente.</p>
+        <p>Les grands acteurs institutionnels ont besoin de liquidité pour exécuter leurs ordres massifs sans faire bouger le marché. Ils vont donc <strong style="color:var(--accent2)">chercher ces zones</strong> avant d'initier leur vrai mouvement.</p>`
+      },
+      {
+        title: 'Les zones de liquidité classiques',
+        content: `<table class="data-table">
+          <tr><th>Zone de liquidité</th><th>Description</th><th>Ce qui se passe</th></tr>
+          <tr><td>Equal Highs (EQH)</td><td>Deux sommets ou plus au même niveau</td><td>Stops des vendeurs et acheteurs en cassure regroupés → cible idéale</td></tr>
+          <tr><td>Equal Lows (EQL)</td><td>Deux planchers ou plus au même niveau</td><td>Stops des acheteurs regroupés → cible idéale pour une chasse</td></tr>
+          <tr><td>Haut / Bas précédent</td><td>High ou Low de la session / semaine précédente</td><td>Niveau psychologique avec accumulation de stops</td></tr>
+          <tr><td>Niveaux ronds</td><td>0, 00, 000 (ex: 1.1000, 50 000$)</td><td>Accumulation naturelle d'ordres stop et limit</td></tr>
+        </table>`
+      },
+      {
+        title: 'Le Stop Hunt et les Fair Value Gaps',
+        content: `<p><strong style="color:var(--accent)">Stop Hunt (Chasse de liquidité)</strong> :</p>
+        <ol style="margin:12px 0 12px 20px;color:var(--text2);font-size:13.5px;line-height:1.8">
+          <li>Le prix approche un niveau visible (Equal Highs, résistance majeure)</li>
+          <li>Il le casse brièvement — activant les stops des vendeurs et attirant les acheteurs en breakout</li>
+          <li>Il revient IMMÉDIATEMENT sous le niveau — piégeant tous ces nouveaux entrants</li>
+          <li>Il repart dans la direction opposée avec force</li>
+        </ol>
+        <div class="concept-box"><strong>🎯 Setup puissant :</strong> Liquidity Sweep + Engulfing. Le prix fait un stop hunt au-dessus d'une résistance (EQH), puis une bougie Engulfing baissière clôture sous la résistance → signal de vente fort.</div>
+        <p style="margin-top:16px"><strong style="color:var(--accent)">Fair Value Gap (FVG / Imbalance)</strong> — Zone de prix où le marché s'est déplacé si rapidement qu'il n'y a pas eu d'échanges efficaces. Reconnaissable par 3 bougies consécutives dont les mèches de la bougie 1 et 3 ne se chevauchent pas. Le prix tend à revenir combler ces zones.</p>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Pourquoi les institutionnels cherchent-ils les zones de liquidité ?",
+        answers: ["Pour déclencher des alertes sur les plateformes retail", "Pour exécuter leurs ordres massifs sans déplacer le marché défavorablement", "Pour éviter de trader dans les tendances fortes", "Pour signaler un breakout aux autres traders"],
+        correct: 1,
+        explanation: "Les institutionnels ont besoin d'énormes volumes pour entrer. Ils vont chercher les zones de stop pour trouver la liquidité nécessaire à leurs ordres, sans faire exploser le prix contre eux."
+      },
+      {
+        q: "Les Equal Highs (EQH) sont dangereux parce que :",
+        answers: ["Ils indiquent une tendance baissière forte", "Ils concentrent les stops des vendeurs et les ordres d'achat en breakout — cible idéale pour un stop hunt", "Ils signalent toujours un vrai breakout haussier", "Ils n'ont aucune importance en trading institutionnel"],
+        correct: 1,
+        explanation: "Les EQH accumulent deux types d'ordres : les stops des vendeurs short (placés au-dessus de la résistance) et les ordres d'achat des traders qui attendent la cassure. Cette concentration de liquidité en fait une cible idéale."
+      },
+      {
+        q: "Dans un stop hunt classique, après la cassure d'un niveau, le prix :",
+        answers: ["Continue dans la direction de la cassure avec force", "Revient immédiatement à l'intérieur du niveau, piégeant les nouveaux entrants", "Consolide pendant plusieurs jours", "Déclenche un autre BoS"],
+        correct: 1,
+        explanation: "Le stop hunt = cassure rapide → activation des stops → retour immédiat sous le niveau → move dans la direction opposée. Les traders qui ont acheté la cassure se retrouvent piégés en perte."
+      },
+      {
+        q: "Un Fair Value Gap (FVG) est reconnaissable par :",
+        answers: ["Une seule bougie avec un corps très large", "Trois bougies consécutives dont les mèches de la 1ère et 3ème ne se chevauchent pas", "Deux Doji consécutifs", "Un Pin Bar sur un niveau de support"],
+        correct: 1,
+        explanation: "Le FVG = 3 bougies où il y a un espace vide entre la mèche haute de la bougie 1 et la mèche basse de la bougie 3. Cet espace représente une zone d'inefficacité que le marché tend à combler."
+      },
+      {
+        q: "Quel setup combine stop hunt et pattern de bougie pour un signal fort ?",
+        answers: ["Doji + Inside Bar", "Pin Bar seul sur une résistance", "Liquidity Sweep + Engulfing", "Marubozu sur un HL"],
+        correct: 2,
+        explanation: "Le Liquidity Sweep + Engulfing est l'un des setups les plus fiables : le stop hunt 'nettoie le terrain' en éliminant les ordres contraires, puis l'Engulfing confirme le vrai mouvement dans la nouvelle direction."
+      }
+    ]
+  },
+
+  {
+    id: 'm5',
+    title: 'Fake Breakouts & Setups Pros',
+    desc: 'Identifier les fausses cassures, les 3 setups avancés, checklist d\'entrée.',
+    icon: '🪤',
+    color: '#ff6b35',
+    lessons: [
+      {
+        title: 'Qu\'est-ce qu\'un Fake Breakout ?',
+        content: `<p>Un fake breakout survient quand le prix casse un niveau clé, attire les traders en breakout... puis revient à l'intérieur du niveau. C'est l'un des setups les plus rentables car il piège une grande quantité de traders.</p>
+        <table class="data-table" style="margin-top:16px">
+          <tr><th>Critère</th><th>Vrai Breakout</th><th>Fake Breakout</th></tr>
+          <tr><td>Volume</td><td><span class="tag tag-green">Fort</span></td><td><span class="tag tag-red">Faible/moyen</span></td></tr>
+          <tr><td>Corps de bougie</td><td>Grande bougie, clôture franche</td><td>Petite bougie ou longue mèche</td></tr>
+          <tr><td>Réaction post-cassure</td><td>Le niveau tient au retest</td><td>Retour immédiat à l'intérieur</td></tr>
+          <tr><td>Contexte</td><td>Dans le sens de la tendance macro</td><td>Contre-tendance ou range mature</td></tr>
+        </table>`
+      },
+      {
+        title: 'Les 3 setups avancés utilisés par les pros',
+        content: `<p><strong style="color:var(--accent)">Setup 1 — Liquidity Sweep + Engulfing</strong></p>
+        <p>Identifier les EQH/EQL → attendre le sweep → observer l'Engulfing qui clôture à l'intérieur → entrer au close → stop derrière l'extrême, TP au prochain niveau clé.</p>
+        <p style="margin-top:16px"><strong style="color:var(--accent)">Setup 2 — Break + Retest de Structure</strong></p>
+        <p>Identifier un niveau majeur sur 4H ou Daily → attendre une cassure franche (grande bougie) → attendre le retest du niveau (maintenant polarisé) → chercher un Pin Bar ou Engulfing → stop sous le retest.</p>
+        <p style="margin-top:16px"><strong style="color:var(--accent)">Setup 3 — Compression Breakout</strong></p>
+        <p>Identifier une série de bougies avec range décroissant (Inside Bars multiples, triangle) → identifier la direction probable selon la tendance macro → ordre stop à la cassure → stop serré à l'intérieur de la compression.</p>
+        <div class="concept-box"><strong>💡</strong> Le Compression Breakout offre souvent les meilleurs ratios risk/reward car le stop est naturellement serré (range faible) et le move potentiel est large. Privilégié avant les publications macro (FOMC, NFP).</div>`
+      },
+      {
+        title: 'Checklist complète avant d\'entrer',
+        content: `<div class="concept-box" style="font-size:13.5px;line-height:2">
+          <strong>✅ CHECKLIST — toutes les cases doivent être cochées :</strong><br>
+          □ Tendance identifiée sur le Daily ou 4H<br>
+          □ Niveau clé confluent (support / résistance / FVG / zone de liquidité)<br>
+          □ Pattern de bougie valide sur le niveau<br>
+          □ Contexte clair (tendance ? range ? compression ?)<br>
+          □ Ratio Risk/Reward cohérent avec ta stratégie — défini AVANT l'entrée<br>
+          □ Stop-loss placé derrière le niveau invalidant l'analyse
+        </div>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Quelle caractéristique distingue un fake breakout d'un vrai breakout ?",
+        answers: ["Le fake breakout se produit uniquement sur les cryptos", "Le fake breakout génère un retour immédiat à l'intérieur du niveau avec un volume faible", "Le vrai breakout se produit toujours avec un Doji", "Le fake breakout ne peut se produire qu'en dessous d'un support"],
+        correct: 1,
+        explanation: "Le fake breakout = cassure brève + retour rapide + volume faible. Le vrai breakout = grande bougie franche + volume fort + le niveau tient comme nouveau support/résistance au retest."
+      },
+      {
+        q: "Dans le Setup 2 (Break + Retest), dans quel ordre se passe les étapes ?",
+        answers: ["Retest → Cassure → Confirmation", "Cassure franche → Retest du niveau → Signal (Pin Bar/Engulfing) → Entrée", "Pin Bar → Cassure → Stop placé", "Compression → Breakout → ChoCh"],
+        correct: 1,
+        explanation: "Le Break + Retest : 1/ cassure franche d'un niveau majeur 2/ retest (le prix revient sur le niveau qui change de polarité) 3/ signal de confirmation (Pin Bar ou Engulfing) 4/ entrée avec stop sous le retest."
+      },
+      {
+        q: "Pourquoi le Compression Breakout offre-t-il souvent les meilleurs ratios ?",
+        answers: ["Parce qu'il se produit toujours dans le sens de la tendance", "Parce que le stop est naturellement serré (petite range) tandis que le move potentiel est large", "Parce qu'il ne nécessite pas de niveau clé", "Parce que le volume est toujours fort"],
+        correct: 1,
+        explanation: "La compression = range étroite = stop très serré. Mais la compression précède souvent une forte expansion de volatilité = large move potentiel. C'est cette asymétrie qui crée des ratios R/R exceptionnels."
+      },
+      {
+        q: "Dans la checklist avant d'entrer un trade, lequel de ces éléments est indispensable ?",
+        answers: ["Un RSI sous 30 ou au-dessus de 70", "Le Ratio Risk/Reward défini AVANT l'entrée", "Un volume supérieur à la moyenne mobile", "Un signal sur au moins 3 timeframes différents"],
+        correct: 1,
+        explanation: "Le R/R doit être défini AVANT l'entrée. Définir son stop et son TP APRÈS être entré mène à de mauvaises décisions basées sur les émotions. Le R/R doit faire partie des critères d'entrée, pas d'une réflexion post-entrée."
+      },
+      {
+        q: "Dans le Setup Liquidity Sweep + Engulfing, pourquoi est-il 'propre' ?",
+        answers: ["Parce que le stop hunt a éliminé les ordres contraires, nettoyant le terrain pour le vrai mouvement", "Parce qu'il est utilisé uniquement par les institutionnels", "Parce que le volume est toujours maximum", "Parce qu'il n'a jamais de faux signaux"],
+        correct: 0,
+        explanation: "Après le stop hunt, les ordres des traders piégés (acheteurs en breakout) sont maintenant des pertes qu'ils vont couper. Cette liquidité alimente le vrai move dans la direction opposée. Le terrain est 'nettoyé'."
+      }
+    ]
+  },
+
+  {
+    id: 'm6',
+    title: 'Psychologie du Trading',
+    desc: 'Peur, cupidité, FOMO, ego, revenge trading — comprendre et contrôler ses émotions.',
+    icon: '🧠',
+    color: '#7c6af7',
+    lessons: [
+      {
+        title: 'La vérité sur l\'échec des traders',
+        content: `<div class="warning-box"><strong>⚡ La vérité que personne ne dit :</strong> 90% des traders qui échouent connaissent la théorie. Ils échouent à cause de leur psychologie — peur, cupidité, impatience, ego. La maîtrise technique représente 30% de la réussite. Les 70% restants sont dans la tête.</div>
+        <div class="concept-box"><strong>Principe fondamental :</strong> Les pertes sont inévitables, permanentes et nécessaires. Même les meilleurs traders perdent entre 35 et 50% de leurs trades. La différence entre un trader profitable et perdant n'est pas le nombre de pertes — c'est la façon dont ils gèrent ces pertes.</div>`
+      },
+      {
+        title: 'Les émotions et leur impact',
+        content: `<table class="data-table">
+          <tr><th>Émotion</th><th>Déclencheur</th><th>Comportement destructeur</th><th>Conséquence</th></tr>
+          <tr><td>Peur</td><td>Après une perte</td><td>Hésite à entrer, coupe trop tôt</td><td>Rate les meilleures opportunités</td></tr>
+          <tr><td>Cupidité</td><td>Après un gain</td><td>Élargit le TP, entre sur des setups médiocres</td><td>Rend les gains, prend trop de risque</td></tr>
+          <tr><td>FOMO</td><td>Voit un move</td><td>Entre tard, sans setup, hors plan</td><td>Achète les sommets, vend les bas</td></tr>
+          <tr><td>Ego</td><td>Après analyse forte</td><td>Refuse de couper une perte</td><td>Petites pertes deviennent grandes</td></tr>
+          <tr><td>Revenge</td><td>Après une perte</td><td>Trade immédiatement pour récupérer</td><td>Série de pertes, capital détruit</td></tr>
+        </table>`
+      },
+      {
+        title: 'Construire un état d\'esprit professionnel',
+        content: `<p><strong style="color:var(--accent)">Penser en probabilités, pas en certitudes</strong> — Chaque trade est un événement probabiliste dans une longue série. Un trader professionnel pense : « Sur mes 100 prochains trades, mon edge se manifeste. » Pas : « Ce trade va gagner. »</p>
+        <p style="margin-top:12px"><strong style="color:var(--accent)">Détacher le résultat de la qualité d'exécution</strong> — Un trade bien exécuté qui perd est un bon trade. Un trade mal exécuté qui gagne est un mauvais trade. La variance peut récompenser de mauvaises décisions à court terme.</p>
+        <div class="concept-box" style="margin-top:16px"><strong>Règle fondamentale :</strong> Coupe tes pertes rapidement. Laisse courir tes gains. Tout le reste en découle.</div>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Selon les cours, quelle est la répartition facteurs techniques / psychologie dans la réussite en trading ?",
+        answers: ["Technique 70%, Psychologie 30%", "Technique 50%, Psychologie 50%", "Technique 30%, Psychologie + Processus 70%", "Technique 90%, Psychologie 10%"],
+        correct: 2,
+        explanation: "Technique = 30%, Psychologie = 40%, Processus (backtesting + journal) = 30%. La majorité des cours ne parlent que de technique — alors que c'est la partie la moins importante de l'équation."
+      },
+      {
+        q: "Le 'Revenge Trading' consiste à :",
+        answers: ["Analyser ses erreurs après une perte", "Prendre des trades immédiatement après une perte pour récupérer", "Augmenter sa taille de position après une série gagnante", "Entrer dans un trade sans stop-loss"],
+        correct: 1,
+        explanation: "Le Revenge Trading = trader émotionnellement juste après une perte pour 'récupérer'. C'est l'état mental le plus dangereux en trading — il mène presque toujours à une série de pertes et à la destruction partielle du capital."
+      },
+      {
+        q: "Le FOMO (Fear Of Missing Out) pousse le trader à :",
+        answers: ["Couper ses gains trop tôt", "Entrer tardivement sur des moves déjà amorcés, hors setup", "Refuser de placer un stop-loss", "Augmenter son risque sur les meilleures configurations"],
+        correct: 1,
+        explanation: "Le FOMO = voir un move et entrer sans setup, tardivement. Résultat : on achète les sommets ou on vend les bas. C'est l'opposé de ce qu'il faut faire — et souvent le signal que le move est sur le point de se terminer."
+      },
+      {
+        q: "Comment un trader professionnel doit-il évaluer un trade perdant bien exécuté ?",
+        answers: ["Comme un échec qu'il faut éviter à l'avenir", "Comme une donnée normale dans une stratégie rentable — un bon trade", "Comme un signe que sa stratégie est cassée", "Comme une raison de modifier ses règles d'entrée"],
+        correct: 1,
+        explanation: "Un trade bien exécuté (toutes les cases de la checklist cochées) qui perd est un BON trade. La perte est normale dans une stratégie à 45% de winrate. Modifier ses règles après chaque perte = dégrader son edge."
+      },
+      {
+        q: "L'aversion à la perte pousse le trader à :",
+        answers: ["Placer des stops très serrés", "Couper les gains trop tôt et laisser courir les pertes — l'opposé de ce qu'il faut faire", "Ne jamais utiliser de levier", "Attendre la confirmation avant d'entrer"],
+        correct: 1,
+        explanation: "L'aversion à la perte (biais cognitif) : une perte fait 2× plus mal qu'un gain de même taille ne fait plaisir. Résultat : on coupe les gains tôt (pour 'sécuriser') et on laisse courir les pertes (espoir de retournement). C'est exactement l'inverse de la règle 'coupe tes pertes, laisse courir tes gains'."
+      }
+    ]
+  },
+
+  {
+    id: 'm7',
+    title: 'Biais Cognitifs & États Mentaux',
+    desc: 'Biais de confirmation, ancrage, excès de confiance, tilt, overtrading.',
+    icon: '⚡',
+    color: '#ff6b35',
+    lessons: [
+      {
+        title: 'Les biais cognitifs qui détruisent les traders',
+        content: `<p><strong style="color:var(--accent)">Biais de confirmation</strong> — Tu cherches des signaux qui confirment ton opinion déjà formée. Tu ignores les signaux contraires. Solution : analyser le graphique SANS position préconçue, puis chercher le setup.</p>
+        <p style="margin-top:12px"><strong style="color:var(--accent)">Ancrage au prix d'entrée</strong> — Tu prends des décisions basées sur ton prix d'entrée plutôt que sur ce que le marché dit actuellement. <em>"Je vais attendre qu'il remonte à mon entry pour sortir à breakeven."</em> Le marché ne sait pas où tu es entré.</p>
+        <p style="margin-top:12px"><strong style="color:var(--accent)">Excès de confiance après une série gagnante</strong> — Après 5 trades gagnants, tu te sens invincible. Tu prends plus de risque, tu trades des setups moins propres. C'est là que les comptes explosent. Les séries de gains sont les moments les plus dangereux.</p>
+        <p style="margin-top:12px"><strong style="color:var(--accent)">Aversion à la perte</strong> — Psychologiquement, une perte fait deux fois plus mal qu'un gain de même taille ne fait plaisir. Résultat : tu coupes tes gains trop tôt et tu laisses courir tes pertes.</p>`
+      },
+      {
+        title: 'Les états mentaux dangereux',
+        content: `<p><strong style="color:var(--accent2)">Le Tilt</strong> — État émotionnel altéré après une perte ou une série de pertes. Symptômes : impatience, entrées impulsives, ignorance du plan. Remède : règle des 2 pertes consécutives (arrêt immédiat de la session).</p>
+        <p style="margin-top:12px"><strong style="color:var(--accent2)">L'Overtrading</strong> — Trader trop souvent par ennui, impatience ou FOMO. Chaque trade supplémentaire dilue ton edge statistique et augmente les frais. Les meilleurs traders sont souvent ceux qui tradent le moins.</p>
+        <p style="margin-top:12px"><strong style="color:var(--accent2)">Le Perfectionnisme paralysant</strong> — Attendre le setup parfait au point de ne jamais entrer. Un setup à 70% de probabilité qui est tradé vaut plus qu'un setup à 90% jamais tradé. La perfection est l'ennemi de l'exécution.</p>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Le biais de confirmation en trading consiste à :",
+        answers: ["Confirmer son entrée avec un deuxième indicateur", "Chercher uniquement les signaux qui confirment une opinion préexistante", "Attendre la confirmation d'un pattern avant d'entrer", "Utiliser plusieurs timeframes pour confirmer un signal"],
+        correct: 1,
+        explanation: "Le biais de confirmation = tu as déjà une opinion (ex: 'ça va monter') et tu ne cherches que les signaux qui la confirment, en ignorant les signaux contraires. Solution : analyser d'abord objectivement, puis chercher le setup."
+      },
+      {
+        q: "Pourquoi les séries de gains sont-elles particulièrement dangereuses ?",
+        answers: ["Parce qu'elles indiquent une stratégie trop agressive", "Parce qu'elles créent un excès de confiance qui pousse à prendre plus de risque sur des setups moins propres", "Parce qu'elles sont toujours suivies d'une série de pertes exactement égale", "Parce qu'elles faussent les statistiques de backtesting"],
+        correct: 1,
+        explanation: "Après une série gagnante, le sentiment d'invincibilité pousse à augmenter le risque et à trader des setups moins rigoureux. C'est souvent à ce moment que le compte explose — pas pendant les séries de pertes où le trader est plus prudent."
+      },
+      {
+        q: "L'overtrading dilue l'edge statistique parce que :",
+        answers: ["Chaque trade supplémentaire en dehors des meilleurs setups dégrade la qualité moyenne et augmente les frais", "Il augmente trop la taille de position", "Il empêche le trader d'analyser correctement le marché", "Il force le trader à utiliser plusieurs stratégies simultanément"],
+        correct: 0,
+        explanation: "L'edge vient de prendre uniquement les meilleurs setups. Chaque trade hors-setup dilue la qualité moyenne du portefeuille et s'accompagne de frais. Les meilleurs traders sont sélectifs — 5 bons trades/semaine > 20 trades médiocres."
+      },
+      {
+        q: "Le 'Tilt' se caractérise principalement par :",
+        answers: ["Une analyse excessive avant chaque entrée", "Un état émotionnel altéré après une perte, avec entrées impulsives et ignorance du plan", "Le refus de prendre des risques après une série de gains", "Une stratégie basée uniquement sur les indicateurs"],
+        correct: 1,
+        explanation: "Le tilt = état émotionnel altéré post-perte. Le cerveau cherche à récupérer et bypasse le raisonnement rationnel. Symptômes : impatience, trades hors-plan, non-respect du risk management. Remède : arrêter immédiatement la session dès 2 pertes consécutives."
+      },
+      {
+        q: "L'ancrage au prix d'entrée est problématique car :",
+        answers: ["Il empêche de placer un stop-loss correct", "Il fait prendre des décisions basées sur son propre prix d'entrée plutôt que sur l'état actuel du marché", "Il pousse à entrer trop tôt sur un setup", "Il cause de l'overtrading"],
+        correct: 1,
+        explanation: "Le marché ne sait pas où tu es entré. Rester dans un trade perdant 'en attendant le breakeven' est une décision émotionnelle basée sur ton prix, pas sur l'analyse du marché. Si le setup est invalidé, sortir immédiatement — peu importe le prix d'entrée."
+      }
+    ]
+  },
+
+  {
+    id: 'm8',
+    title: 'Risk Management',
+    desc: 'Règle des 1-2%, espérance mathématique, winrate vs ratio R/R.',
+    icon: '🛡️',
+    color: '#00d4aa',
+    lessons: [
+      {
+        title: 'Espérance mathématique',
+        content: `<div class="concept-box"><strong>Formule :</strong> Espérance = (Winrate × Gain moyen) − (Loss rate × Perte moyenne)<br><br>
+        Exemple : 45% winrate, ratio 1:2 → (0.45 × 2R) − (0.55 × 1R) = +0.35R par trade → Sur 100 trades = +35R net ✅</div>
+        <table class="data-table" style="margin-top:16px">
+          <tr><th>Winrate</th><th>Ratio R/R</th><th>Résultat / 100 trades</th><th>Rentable ?</th></tr>
+          <tr><td>35%</td><td>1:3</td><td>+40R</td><td><span class="tag tag-green">Excellent</span></td></tr>
+          <tr><td>40%</td><td>1:2</td><td>+20R</td><td><span class="tag tag-green">Bon</span></td></tr>
+          <tr><td>45%</td><td>1:1.5</td><td>+12.5R</td><td><span class="tag tag-green">Correct</span></td></tr>
+          <tr><td>50%</td><td>1:1</td><td>0R</td><td><span class="tag tag-yellow">Neutre</span></td></tr>
+          <tr><td>55%</td><td>1:1</td><td>+10R</td><td><span class="tag tag-green">Ok</span></td></tr>
+          <tr><td>65%</td><td>1:0.8</td><td>+22R</td><td><span class="tag tag-green">Scalping viable</span></td></tr>
+        </table>`
+      },
+      {
+        title: 'La règle des 1-2% — Non négociable',
+        content: `<p>Quelle que soit la qualité du setup, <strong style="color:var(--accent2)">ne risquer jamais plus de 1-2% du capital par trade</strong>. Cette règle protège le compte lors des inévitables séries de pertes.</p>
+        <table class="data-table">
+          <tr><th>Capital</th><th>Risque 1% / trade</th><th>Résiste à une série de</th></tr>
+          <tr><td>1 000 €</td><td>10 €</td><td>50 pertes consécutives → −40% capital</td></tr>
+          <tr><td>5 000 €</td><td>50 €</td><td>50 pertes consécutives → −40% capital</td></tr>
+          <tr><td>10 000 €</td><td>100 €</td><td>50 pertes consécutives → −40% capital</td></tr>
+        </table>
+        <div class="warning-box"><strong>⚠️ Comparaison :</strong> Avec 2% de risque : 20 pertes → −33% du capital. Avec 10% de risque : 10 pertes → −65% du capital. Le dimensionnement de position est plus important que le signal lui-même.</div>
+        <p style="margin-top:12px"><strong style="color:var(--accent)">Winrate réaliste par profil :</strong></p>
+        <ul style="margin:12px 0 0 20px;color:var(--text2);font-size:13.5px;line-height:2">
+          <li>Débutant (&lt; 6 mois) : 40-45% avec ratio 1:2 minimum</li>
+          <li>Intermédiaire (6-18 mois) : 45-55% avec ratio 1:1.5 à 1:2</li>
+          <li>Confirmé (18 mois+) : 50-60% avec ratio adapté</li>
+          <li>Scalper expérimenté : 60-70% avec ratio 1:0.8 à 1:1</li>
+        </ul>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Avec un winrate de 40% et un ratio R/R de 1:2, le résultat sur 100 trades est :",
+        answers: ["-20R (déficitaire)", "0R (neutre)", "+20R (profitable)", "+40R (excellent)"],
+        correct: 2,
+        explanation: "Calcul : (0.40 × 2R) − (0.60 × 1R) = 0.80R − 0.60R = +0.20R par trade. Sur 100 trades : +20R. Un trader qui perd 60% de ses trades peut être largement profitable avec un bon ratio !"
+      },
+      {
+        q: "Avec 10% de risque par trade, combien de pertes consécutives amènent à -65% du capital ?",
+        answers: ["20 pertes", "15 pertes", "10 pertes", "5 pertes"],
+        correct: 2,
+        explanation: "Avec 10% de risque par trade : après 10 pertes consécutives, le capital est réduit d'environ 65%. Avec 1% de risque, 50 pertes consécutives n'amènent qu'à -40%. La règle des 1-2% est la fondation de la survie en trading."
+      },
+      {
+        q: "Un trader débutant (moins de 6 mois) devrait viser :",
+        answers: ["65-70% de winrate avec ratio 1:0.8", "40-45% de winrate avec ratio 1:2 minimum", "55-60% de winrate avec ratio 1:1.5", "80% de winrate avec ratio 1:0.5"],
+        correct: 1,
+        explanation: "Les attentes réalistes pour un débutant : 40-45% de winrate avec un ratio 1:2. C'est mathématiquement rentable ((0.42×2) − (0.58×1) = +0.26R/trade) et réaliste à atteindre avec de la discipline."
+      },
+      {
+        q: "Pourquoi le ratio R/R doit-il être défini AVANT l'entrée ?",
+        answers: ["Pour respecter les réglementations financières", "Pour éviter les décisions émotionnelles et s'assurer que l'espérance est positive avant d'entrer", "Pour pouvoir comparer ses résultats avec d'autres traders", "Pour calculer la taille de position exacte"],
+        correct: 1,
+        explanation: "Définir le R/R avant l'entrée force une analyse objective : si le ratio est inférieur à ton minimum requis, tu ne trades pas. Définir le TP après l'entrée mène à des décisions émotionnelles (élargir ou couper selon les émotions)."
+      },
+      {
+        q: "Lequel de ces scénarios est mathématiquement rentable ?",
+        answers: ["35% winrate avec ratio 1:1", "50% winrate avec ratio 1:1", "35% winrate avec ratio 1:3", "40% winrate avec ratio 1:1"],
+        correct: 2,
+        explanation: "35% winrate + ratio 1:3 : (0.35×3) − (0.65×1) = 1.05 − 0.65 = +0.40R par trade. Excellent ! Un faible winrate peut être très profitable avec un ratio élevé. C'est l'espérance mathématique qui compte, pas le winrate seul."
+      }
+    ]
+  },
+
+  {
+    id: 'm9',
+    title: 'Backtesting Rigoureux',
+    desc: 'Méthodologie, erreurs classiques, drawdown, variance.',
+    icon: '📊',
+    color: '#ffc857',
+    lessons: [
+      {
+        title: 'Pourquoi le backtesting est indispensable',
+        content: `<p>Le backtesting permet de <strong style="color:var(--accent)">prouver chiffres à l'appui</strong> que ton edge existe avant de risquer de l'argent réel. Sans backtesting, trader = espérer avoir un edge, pas savoir qu'on en a un.</p>
+        <div class="concept-box"><strong>Métriques clés à suivre :</strong><br>
+        • <strong>Profit Factor</strong> = Somme gains / Somme pertes (objectif > 1.3)<br>
+        • <strong>Max Drawdown</strong> = Baisse maximale du capital depuis un pic<br>
+        • <strong>Espérance mathématique</strong> = (Winrate × Gain moy) − (Loss rate × Perte moy)<br>
+        • <strong>Nb de trades</strong> = minimum 200 pour être statistiquement significatif</div>`
+      },
+      {
+        title: 'Comprendre la variance',
+        content: `<p>Deux traders suivant la même stratégie à 50% de winrate peuvent avoir des résultats très différents sur les 20 premiers trades — l'un à +8R, l'autre à -4R. C'est la <strong style="color:var(--accent)">variance</strong>.</p>
+        <div class="warning-box"><strong>⚠️ Ne pas modifier une stratégie après moins de 50 trades.</strong> Les données sont insuffisantes. Ce que tu observes avant 100-200 trades = variance, pas la vraie performance de ta stratégie.</div>
+        <table class="data-table" style="margin-top:16px">
+          <tr><th>Situation</th><th>Réaction émotionnelle</th><th>Réponse correcte</th></tr>
+          <tr><td>5 gains de suite</td><td>"Ma stratégie est parfaite"</td><td>Variance positive — rester discipliné sur le risk</td></tr>
+          <tr><td>5 pertes de suite</td><td>"Ça ne marche pas"</td><td>Variance normale avec 45% winrate — continuer</td></tr>
+          <tr><td>Mois perdant</td><td>"Tout arrêter"</td><td>Vérifier si le plan a été suivi — si oui, c'est de la variance</td></tr>
+        </table>`
+      },
+      {
+        title: 'Erreurs classiques de backtesting',
+        content: `<ul style="margin:12px 0 12px 20px;color:var(--text2);font-size:13.5px;line-height:2">
+          <li><strong style="color:var(--accent2)">Biais de look-ahead</strong> : Utiliser des infos que tu n'aurais pas eues au moment du signal</li>
+          <li><strong style="color:var(--accent2)">Biais de sélection</strong> : Ne noter que les trades gagnants, sauter les perdants "pas assez propres"</li>
+          <li><strong style="color:var(--accent2)">Trop peu de trades</strong> : 50 trades ne sont pas statistiquement significatifs — viser 200 minimum</li>
+          <li><strong style="color:var(--accent2)">Une seule période</strong> : Tester uniquement en bull market → résultats biaisés. Tester tendance + range + bear market</li>
+          <li><strong style="color:var(--accent2)">Ignorer les frais</strong> : En scalping, les frais peuvent anéantir un edge positif brut</li>
+        </ul>
+        <div class="concept-box"><strong>Checklist avant passer en compte réel :</strong><br>
+        ✅ 200+ trades backtestés sur 2+ ans d'historique<br>
+        ✅ Espérance mathématique positive confirmée<br>
+        ✅ Profit Factor > 1.3<br>
+        ✅ Max drawdown compris et accepté psychologiquement<br>
+        ✅ 1-3 mois de forward testing en démo avec les mêmes résultats</div>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Combien de trades minimum sont nécessaires pour un backtesting statistiquement significatif ?",
+        answers: ["20 trades", "50 trades", "100 trades", "200 trades minimum"],
+        correct: 3,
+        explanation: "Minimum 200 trades sur 2+ ans d'historique pour des données statistiquement significatives. En dessous, on observe principalement de la variance — ce n'est pas la vraie performance de la stratégie."
+      },
+      {
+        q: "Qu'est-ce que le 'biais de look-ahead' en backtesting ?",
+        answers: ["Regarder trop loin dans le futur lors de la projection des gains", "Utiliser des informations qu'on n'aurait pas eues au moment réel du signal", "Backtest uniquement sur les marchés haussiers", "Utiliser des stops trop larges"],
+        correct: 1,
+        explanation: "Le biais de look-ahead = entrer sur un trade 'parce que tu sais que le prix est monté après'. En temps réel, tu n'aurais pas eu cette information. Ce biais gonfle artificiellement les résultats du backtesting."
+      },
+      {
+        q: "Quel Profit Factor minimum indique une stratégie robuste ?",
+        answers: ["0.8", "1.0", "1.3", "2.5"],
+        correct: 2,
+        explanation: "Profit Factor = Somme des gains / Somme des pertes. Un PF = 1.0 = neutre (avant frais). L'objectif minimum est > 1.3 pour avoir une marge après frais et s'assurer que l'edge est réel."
+      },
+      {
+        q: "Deux traders suivent la même stratégie à 50% de winrate. Sur les 20 premiers trades, l'un est à +8R et l'autre à -4R. Que signifie cet écart ?",
+        answers: ["L'un des deux traders a une meilleure technique", "C'est de la variance normale à court terme — leur performance long terme devrait converger", "La stratégie ne fonctionne que pour certains traders", "Il faut qu'ils modifient la stratégie pour réduire cet écart"],
+        correct: 1,
+        explanation: "C'est de la variance statistique pure. Deux personnes exécutant la même stratégie peuvent avoir des résultats très différents sur 20 trades. La vraie performance ne se voit qu'après 100-200 trades."
+      },
+      {
+        q: "Après 5 pertes consécutives, la bonne réaction est de :",
+        answers: ["Doubler la taille de position pour récupérer rapidement", "Modifier immédiatement la stratégie", "Vérifier si le plan a été suivi — si oui, c'est de la variance normale, continuer avec discipline", "Arrêter le trading définitivement"],
+        correct: 2,
+        explanation: "5 pertes consécutives avec un winrate de 45% est statistiquement banal. La question correcte : 'Ai-je suivi mon plan ?' Si oui, c'est de la variance — continuer. Si non, corriger l'exécution, pas la stratégie."
+      }
+    ]
+  },
+
+  {
+    id: 'm10',
+    title: 'Journal de Trading',
+    desc: 'Pourquoi tenir un journal, quoi noter, analyse mensuelle et progression.',
+    icon: '📔',
+    color: '#00d4aa',
+    lessons: [
+      {
+        title: 'Pourquoi le journal est l\'outil n°1',
+        content: `<div class="concept-box"><strong>💡 Le journal de trading est l'outil n°1 de progression.</strong> Sans lui, tu répètes les mêmes erreurs indéfiniment sans t'en rendre compte. Les traders professionnels tiennent tous un journal. C'est la différence entre ceux qui progressent et ceux qui stagnent.</div>
+        <ul style="margin:12px 0 12px 20px;color:var(--text2);font-size:13.5px;line-height:2">
+          <li><strong>Identifier tes patterns d'erreur :</strong> Après 50 trades, tu verras que tu perds surtout le lundi matin, ou que tes trades FOMO ont 80% de perte</li>
+          <li><strong>Mesurer ta progression réelle :</strong> Pas d'émotions, que des chiffres</li>
+          <li><strong>Responsabilisation :</strong> Écrire un trade force à être honnête avec soi-même</li>
+          <li><strong>Base de données personnelle :</strong> Après 6 mois, plus de données sur ton trading que n'importe quel cours</li>
+        </ul>`
+      },
+      {
+        title: 'Ce qu\'un journal doit contenir',
+        content: `<p><strong style="color:var(--accent)">Données objectives (chiffres) :</strong> Date/heure, instrument, direction (Long/Short), prix d'entrée, stop-loss, take-profit, taille de position, prix de sortie, résultat en R et en €/$.</p>
+        <p style="margin-top:12px"><strong style="color:var(--accent)">Données subjectives (analyse) :</strong> Setup utilisé, timeframe, contexte de marché, niveau confluent, raison d'entrée, qualité d'exécution (1-10), état émotionnel, suivi du plan (Oui/Non), ce qui s'est passé, leçon tirée.</p>`
+      },
+      {
+        title: 'Analyse hebdomadaire et métriques mensuelles',
+        content: `<p>Une fois par semaine (vendredi soir), faire le bilan : nb de trades, winrate, résultat total (R), % de trades suivant le plan, meilleur/pire trade de la semaine, erreur récurrente identifiée.</p>
+        <table class="data-table" style="margin-top:16px">
+          <tr><th>Métrique</th><th>Ce qu'elle révèle</th><th>Action si problème</th></tr>
+          <tr><td>Winrate</td><td>Qualité de la sélection des setups</td><td>Être plus sélectif</td></tr>
+          <tr><td>Ratio R/R réalisé</td><td>Gestion des trades</td><td>Laisser courir, travailler le trailing stop</td></tr>
+          <tr><td>% trades hors plan</td><td>Niveau de discipline émotionnelle</td><td>Appliquer la règle des 2 pertes</td></tr>
+          <tr><td>Résultats par setup</td><td>Quels patterns fonctionnent pour toi</td><td>Se concentrer sur 2-3 setups top</td></tr>
+          <tr><td>Résultats par heure</td><td>Tes meilleurs créneaux horaires</td><td>Trader uniquement tes meilleures heures</td></tr>
+        </table>`
+      }
+    ],
+    quiz: [
+      {
+        q: "Un trade mal exécuté (hors plan) qui se termine gagnant est :",
+        answers: ["Un bon trade — le résultat prouve que l'intuition était bonne", "Un mauvais trade — le résultat positif ne valide pas une mauvaise décision", "Un signal pour adapter sa stratégie", "Un indicateur que les règles sont trop strictes"],
+        correct: 1,
+        explanation: "Un trade mal exécuté qui gagne = un mauvais trade. La variance peut récompenser une mauvaise décision à court terme. Récompenser mentalement un trade hors-plan dégrade la discipline sur le long terme."
+      },
+      {
+        q: "La métrique 'Résultats par heure' dans le journal permet de :",
+        answers: ["Calculer le taux de taxation des gains", "Identifier ses meilleures créneaux horaires pour concentrer son trading sur ces plages", "Mesurer la vitesse d'exécution des ordres", "Comparer ses résultats avec les autres traders"],
+        correct: 1,
+        explanation: "En analysant ses résultats par plage horaire, on découvre souvent que certains moments sont systématiquement perdants (ouverture trop volatile, liquidité faible la nuit...). Se concentrer sur ses meilleures heures améliore mécaniquement le winrate."
+      },
+      {
+        q: "Combien de temps faut-il pour avoir une vraie base de données personnelle via le journal ?",
+        answers: ["1 semaine", "1 mois", "Environ 6 mois, avec des données supérieures à n'importe quel cours", "3 ans minimum"],
+        correct: 2,
+        explanation: "Après 6 mois de journal rigoureux, tu disposes d'une base de données personnalisée sur tes patterns, erreurs, meilleures heures, setups les plus performants pour TOI — plus valuable que n'importe quel cours généraliste."
+      },
+      {
+        q: "Si le % de trades hors plan est élevé, l'action recommandée est :",
+        answers: ["Modifier la stratégie pour la rendre plus flexible", "Appliquer la règle des 2 pertes consécutives et retravailler la routine de trading", "Augmenter la fréquence de trading pour compenser", "Changer de marché"],
+        correct: 1,
+        explanation: "Un % élevé de trades hors plan signale un problème de discipline émotionnelle, pas un problème de stratégie. La solution : règle stricte (2 pertes consécutives = fin de session) et retravailler la routine préparatoire."
+      },
+      {
+        q: "La règle fondamentale du Risk Management résumée en une phrase est :",
+        answers: ["Ne jamais trader sans indicateurs", "Coupe tes pertes rapidement. Laisse courir tes gains", "Utilise toujours un ratio minimum de 1:3", "Ne trade que 2 fois par semaine maximum"],
+        correct: 1,
+        explanation: "Cette règle fondamentale est la conséquence directe de l'asymétrie psychologique (l'aversion à la perte). En la suivant, tu contre-agis naturellement le biais de couper trop tôt les gains et de laisser courir les pertes."
+      }
+    ]
+  }
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let state = JSON.parse(localStorage.getItem('tradingAcademyState') || '{}');
+// state[moduleId] = { read: bool, quizScore: 0-100, quizDone: bool }
+
+function saveState() {
+  localStorage.setItem('tradingAcademyState', JSON.stringify(state));
+}
+
+function getModuleState(id) {
+  return state[id] || { read: false, quizScore: null, quizDone: false };
+}
+
+function isModuleComplete(id) {
+  const s = getModuleState(id);
+  return s.quizDone && s.quizScore >= 70;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  renderModuleCards();
+  renderNavStatuses();
+  renderProgressPage();
+  updateGlobalProgress();
+}
+
+function renderModuleCards() {
+  const grid = document.getElementById('modules-grid');
+  grid.innerHTML = '';
+  MODULES.forEach(m => {
+    const ms = getModuleState(m.id);
+    const done = isModuleComplete(m.id);
+    let badge, score;
+    if (done) { badge = '<span class="module-badge badge-done">VALIDÉ</span>'; }
+    else if (ms.quizDone) { badge = `<span class="module-badge badge-quiz">QUIZ: ${ms.quizScore}%</span>`; }
+    else if (ms.read) { badge = '<span class="module-badge badge-quiz">QUIZ DISPO</span>'; }
+    else { badge = '<span class="module-badge badge-new">À LIRE</span>'; }
+
+    score = ms.quizScore !== null ? `<span class="module-score">${ms.quizScore}%</span>` : '';
+
+    grid.innerHTML += `
+      <div class="module-card ${done ? 'completed' : ''}" onclick="showPage('${m.id}')">
+        <div class="module-num">MODULE ${MODULES.indexOf(m) + 1} · ${m.icon}</div>
+        <div class="module-title">${m.title}</div>
+        <div class="module-desc">${m.desc}</div>
+        <div class="module-footer">${badge}${score}</div>
+      </div>`;
+  });
+}
+
+function renderNavStatuses() {
+  MODULES.forEach(m => {
+    const el = document.getElementById(`status-${m.id}`);
+    if (!el) return;
+    const ms = getModuleState(m.id);
+    const done = isModuleComplete(m.id);
+    if (done) { el.className = 'nav-status done'; el.textContent = '✓'; }
+    else if (ms.quizDone) { el.className = 'nav-status quiz'; el.textContent = `${ms.quizScore}%`; }
+    else if (ms.read) { el.className = 'nav-status quiz'; el.textContent = '!'; }
+    else { el.className = 'nav-status locked'; el.textContent = '—'; }
+  });
+}
+
+function renderProgressPage() {
+  const list = document.getElementById('progress-list');
+  if (!list) return;
+  list.innerHTML = '';
+  MODULES.forEach(m => {
+    const ms = getModuleState(m.id);
+    const done = isModuleComplete(m.id);
+    const score = ms.quizScore !== null ? ms.quizScore : 0;
+    const barColor = done ? '#00c896' : ms.quizDone ? '#ffc857' : '#555c6e';
+    list.innerHTML += `
+      <div class="progress-module">
+        <div class="pm-icon" style="background:${m.color}22;font-size:20px">${m.icon}</div>
+        <div class="pm-info">
+          <div class="pm-title">${m.title}</div>
+          <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${done ? 'VALIDÉ ✓' : ms.quizDone ? `Score: ${score}% — réessaie pour valider (min 70%)` : ms.read ? 'Cours lu — lance le quiz !' : 'À lire'}</div>
+          <div class="pm-bar"><div class="pm-bar-fill" style="width:${score}%;background:${barColor}"></div></div>
+        </div>
+        <div class="pm-stat" style="color:${barColor}">${ms.quizScore !== null ? score + '%' : '—'}</div>
+      </div>`;
+  });
+}
+
+function updateGlobalProgress() {
+  const total = MODULES.length;
+  const done = MODULES.filter(m => isModuleComplete(m.id)).length;
+  const pct = Math.round((done / total) * 100);
+  document.getElementById('globalProgressBar').style.width = pct + '%';
+  document.getElementById('globalProgressPct').textContent = pct + '%';
+  document.getElementById('globalProgressModules').textContent = `${done} / ${total} modules`;
+  document.getElementById('topStatModules').textContent = `${done} module${done > 1 ? 's' : ''} complété${done > 1 ? 's' : ''}`;
+
+  const scores = MODULES.map(m => getModuleState(m.id).quizScore).filter(s => s !== null);
+  if (scores.length > 0) {
+    const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    document.getElementById('topStatScore').textContent = `Score moyen ${avg}%`;
+  }
+}
+
+// ============================================================
+// MODULE PAGE BUILDER
+// ============================================================
+function buildModulePage(m) {
+  const container = document.getElementById(`page-${m.id}`);
+  if (container.dataset.built) return;
+  container.dataset.built = 'true';
+
+  let lessonsHTML = m.lessons.map((l, i) => `
+    <div class="lesson-block" id="lesson-${m.id}-${i}">
+      <div class="lesson-block-header" onclick="toggleLesson('${m.id}', ${i})">
+        <div class="lesson-num-circle">${String(i + 1).padStart(2, '0')}</div>
+        <h3>${l.title}</h3>
+        <span class="expand-icon">▼</span>
+      </div>
+      <div class="lesson-content">${l.content}</div>
+    </div>`).join('');
+
+  const ms = getModuleState(m.id);
+  const done = isModuleComplete(m.id);
+
+  container.innerHTML = `
+    <div class="content-header fade-in">
+      <div class="content-breadcrumb">
+        <span class="crumb" onclick="showPage('home')">Accueil</span>
+        <span>›</span>
+        <span>${m.icon} ${m.title}</span>
+      </div>
+      <h2>${m.title}</h2>
+      <p>${m.desc}</p>
+    </div>
+    ${lessonsHTML}
+    <div id="quiz-section-${m.id}" style="margin-top:32px"></div>`;
+
+  renderQuizSection(m);
+}
+
+function renderQuizSection(m) {
+  const ms = getModuleState(m.id);
+  const section = document.getElementById(`quiz-section-${m.id}`);
+  if (!section) return;
+  const done = isModuleComplete(m.id);
+
+  if (!ms.read && !ms.quizDone) {
+    section.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;text-align:center">
+        <div style="font-size:32px;margin-bottom:12px">📚</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:8px">Lis les leçons ci-dessus</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:20px">Ouvre chaque section pour déverrouiller le quiz</div>
+        <button class="btn btn-ghost" onclick="markRead('${m.id}')">J'ai tout lu — Lancer le quiz ✓</button>
+      </div>`;
+  } else {
+    section.innerHTML = `
+      <div style="background:var(--surface);border:1px solid rgba(0,212,170,0.15);border-radius:12px;padding:28px;text-align:center">
+        <div style="font-size:32px;margin-bottom:12px">🎯</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:8px">Quiz — ${m.title}</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">${m.quiz.length} questions · Score minimum pour valider : 70%</div>
+        ${ms.quizScore !== null ? `<div style="font-family:'DM Mono',monospace;font-size:12px;color:${done ? 'var(--green)' : 'var(--yellow)'};margin-bottom:16px">Dernier score : ${ms.quizScore}% ${done ? '✓ VALIDÉ' : '— Rejouer pour améliorer'}</div>` : ''}
+        <button class="btn btn-primary" onclick="startQuiz('${m.id}')">Lancer le quiz →</button>
+      </div>`;
+  }
+}
+
+function markRead(id) {
+  if (!state[id]) state[id] = {};
+  state[id].read = true;
+  saveState();
+  renderNavStatuses();
+  const m = MODULES.find(x => x.id === id);
+  renderQuizSection(m);
+}
+
+function toggleLesson(moduleId, idx) {
+  const block = document.getElementById(`lesson-${moduleId}-${idx}`);
+  block.classList.toggle('open');
+}
+
+// ============================================================
+// QUIZ ENGINE
+// ============================================================
+let currentQuiz = null;
+
+function startQuiz(moduleId) {
+  const m = MODULES.find(x => x.id === moduleId);
+  currentQuiz = {
+    moduleId,
+    module: m,
+    questions: [...m.quiz],
+    current: 0,
+    answers: [],
+    score: 0
+  };
+
+  const section = document.getElementById(`quiz-section-${moduleId}`);
+  section.innerHTML = '<div id="quiz-render" class="quiz-container"></div>';
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = currentQuiz.questions[currentQuiz.current];
+  const total = currentQuiz.questions.length;
+  const idx = currentQuiz.current;
+  const letters = ['A', 'B', 'C', 'D'];
+
+  const answersHTML = q.answers.map((a, i) => `
+    <button class="answer-btn" id="ans-${i}" onclick="selectAnswer(${i})">
+      <span class="answer-letter">${letters[i]}</span>
+      ${a}
+    </button>`).join('');
+
+  document.getElementById('quiz-render').innerHTML = `
+    <div class="quiz-header">
+      <h2>Quiz — ${currentQuiz.module.title}</h2>
+      <div class="quiz-meta">
+        <span>Question ${idx + 1} / ${total}</span>
+        <div class="quiz-progress-track">
+          <div class="quiz-progress-fill" style="width:${((idx) / total) * 100}%"></div>
+        </div>
+        <span>${currentQuiz.score} pts</span>
+      </div>
+    </div>
+    <div class="question-card" id="question-card">
+      <div class="question-num">QUESTION ${String(idx + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</div>
+      <div class="question-text">${q.q}</div>
+      <div class="answers">${answersHTML}</div>
+      <div class="explanation-box" id="explanation-box">
+        <strong>💡 Explication :</strong> ${q.explanation}
+      </div>
+    </div>
+    <div class="quiz-nav">
+      <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" disabled>Suivant →</button>
+    </div>`;
+}
+
+function selectAnswer(idx) {
+  const q = currentQuiz.questions[currentQuiz.current];
+  const btns = document.querySelectorAll('.answer-btn');
+  btns.forEach(b => b.disabled = true);
+  btns[idx].classList.add(idx === q.correct ? 'correct' : 'wrong');
+  if (idx !== q.correct) btns[q.correct].classList.add('correct');
+  document.getElementById('explanation-box').classList.add('show');
+  document.getElementById('next-btn').disabled = false;
+  currentQuiz.answers.push({ chosen: idx, correct: q.correct });
+  if (idx === q.correct) currentQuiz.score++;
+}
+
+function nextQuestion() {
+  currentQuiz.current++;
+  if (currentQuiz.current >= currentQuiz.questions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  const score = currentQuiz.score;
+  const total = currentQuiz.questions.length;
+  const pct = Math.round((score / total) * 100);
+  const passed = pct >= 70;
+  const ringColor = passed ? '#00c896' : '#ffc857';
+  const circumference = 2 * Math.PI * 48;
+  const dashOffset = circumference - (pct / 100) * circumference;
+
+  // Save
+  if (!state[currentQuiz.moduleId]) state[currentQuiz.moduleId] = {};
+  state[currentQuiz.moduleId].quizDone = true;
+  state[currentQuiz.moduleId].read = true;
+  state[currentQuiz.moduleId].quizScore = pct;
+  saveState();
+
+  document.getElementById('quiz-render').innerHTML = `
+    <div class="results-card">
+      <div class="score-ring">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="48" fill="none" stroke="var(--border)" stroke-width="6"/>
+          <circle cx="60" cy="60" r="48" fill="none" stroke="${ringColor}" stroke-width="6"
+            stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+            stroke-linecap="round" style="transition:stroke-dashoffset 1s ease"/>
+        </svg>
+        <div class="score-center">
+          <div class="score-pct">${pct}%</div>
+          <div class="score-label">SCORE</div>
+        </div>
+      </div>
+      <div class="results-title">${passed ? '🎉 Module validé !' : '📚 Continue !'}</div>
+      <div class="results-sub">${passed
+        ? `Excellent ! Tu as répondu correctement à ${score}/${total} questions. Ce module est validé.`
+        : `Tu as eu ${score}/${total}. Il faut 70% minimum pour valider. Relis les leçons et retente !`}</div>
+      <div class="results-breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-val" style="color:var(--green)">${score}</div>
+          <div class="breakdown-key">Bonnes</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-val" style="color:var(--red)">${total - score}</div>
+          <div class="breakdown-key">Fausses</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-val" style="color:${ringColor}">${pct}%</div>
+          <div class="breakdown-key">Score</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="startQuiz('${currentQuiz.moduleId}')">🔄 Rejouer</button>
+      <button class="btn btn-ghost" onclick="showPage('home')">← Accueil</button>
+      <button class="btn btn-ghost" onclick="showPage('progress')">◈ Progression</button>
+    </div>`;
+
+  renderAll();
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  document.getElementById(`page-${id}`).classList.add('active');
+  const navEl = document.getElementById(`nav-${id}`);
+  if (navEl) navEl.classList.add('active');
+
+  const titles = {
+    home: 'Tableau de bord', progress: 'Ma progression',
+    m1: 'Module 1 — Fondamentaux', m2: 'Module 2 — Bougies japonaises',
+    m3: 'Module 3 — Structure de marché', m4: 'Module 4 — Liquidité',
+    m5: 'Module 5 — Fake Breakouts', m6: 'Module 6 — Psychologie',
+    m7: 'Module 7 — Biais cognitifs', m8: 'Module 8 — Risk Management',
+    m9: 'Module 9 — Backtesting', m10: 'Module 10 — Journal'
+  };
+  document.getElementById('topbarTitle').textContent = titles[id] || id;
+
+  if (id.startsWith('m')) {
+    const m = MODULES.find(x => x.id === id);
+    if (m) buildModulePage(m);
+  }
+
+  if (id === 'progress') renderProgressPage();
+  if (id === 'home') renderModuleCards();
+
+  // close sidebar on mobile
+  document.getElementById('sidebar').classList.remove('open');
+  window.scrollTo(0, 0);
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderAll();
+showPage('home');
+</script>
+</body>
+</html>
